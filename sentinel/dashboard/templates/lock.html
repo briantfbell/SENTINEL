@@ -9,10 +9,6 @@
             <span id="clock-time" class="clock-time">00:00:00</span>
             <span id="clock-date" class="clock-date">&mdash;</span>
         </div>
-        <a class="console-link" href="/console">
-            <span>Console</span>
-            <span aria-hidden="true">&rarr;</span>
-        </a>
     </header>
 
     <div class="lock-grid">
@@ -52,29 +48,48 @@
         <div class="divider" aria-hidden="true"></div>
 
         <section class="ops-panel angular">
-            <p class="panel-eyebrow">Site data</p>
-            <div class="field-stack">
-                {% if property_address %}
-                <div class="field-block">
-                    <p class="field-label">Property</p>
-                    <p class="property-address">{{ property_address }}</p>
-                </div>
-                {% endif %}
+            <div class="panel-content">
+                <p class="panel-eyebrow">Site data</p>
+                <div class="field-stack">
+                    {% if property_address %}
+                    <div class="field-block">
+                        <p class="field-label">Property</p>
+                        <p class="property-address">{{ property_address }}</p>
+                    </div>
+                    {% endif %}
 
-                {% if response_units %}
-                <div class="field-block">
-                    <p class="field-label">Linked response units</p>
-                    <ul class="unit-list">
-                        {% for unit in response_units %}
-                        <li class="unit-row">
-                            <span class="unit-code">{{ "%02d"|format(loop.index) }}</span>
-                            <span class="unit-name">{{ unit }}</span>
-                            <span class="unit-status"><span class="unit-dot"></span>Established</span>
-                        </li>
-                        {% endfor %}
-                    </ul>
+                    {% if response_units %}
+                    <div class="field-block">
+                        <p class="field-label">Linked response units</p>
+                        <ul class="unit-list">
+                            {% for unit in response_units %}
+                            <li class="unit-row">
+                                <span class="unit-code">{{ "%02d"|format(loop.index) }}</span>
+                                <span class="unit-name">{{ unit }}</span>
+                                <span class="unit-status"><span class="unit-dot"></span>Established</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
                 </div>
-                {% endif %}
+            </div>
+
+            <button type="button" class="console-button" onclick="openConsoleGate()">
+                <span>Access console</span>
+                <span aria-hidden="true">&rarr;</span>
+            </button>
+
+            <div id="console-gate" class="console-gate hidden">
+                <p class="field-label">Enter PIN to access console</p>
+                <input id="console-pin-input" class="console-gate-input" type="password"
+                       inputmode="numeric" maxlength="8" autocomplete="off"
+                       onkeydown="if (event.key === 'Enter') submitConsoleGate();">
+                <div class="console-gate-actions">
+                    <button type="button" onclick="closeConsoleGate()">Cancel</button>
+                    <button type="button" class="key-confirm" onclick="submitConsoleGate()">Enter</button>
+                </div>
+                <p id="console-gate-message" class="pin-message" role="status"></p>
             </div>
         </section>
     </div>
@@ -157,6 +172,41 @@ document.body.addEventListener("htmx:afterSwap", (event) => {
         updateActionButton();
     }
 });
+
+function openConsoleGate() {
+    document.getElementById("console-gate").classList.remove("hidden");
+    document.getElementById("console-pin-input").focus();
+}
+
+function closeConsoleGate() {
+    document.getElementById("console-gate").classList.add("hidden");
+    document.getElementById("console-pin-input").value = "";
+    document.getElementById("console-gate-message").textContent = "";
+}
+
+async function submitConsoleGate() {
+    const pinInput = document.getElementById("console-pin-input");
+    const messageEl = document.getElementById("console-gate-message");
+    if (!pinInput.value) {
+        messageEl.textContent = "Enter your PIN first";
+        return;
+    }
+    messageEl.textContent = "";
+
+    const login = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pin: pinInput.value }),
+    });
+    if (!login.ok) {
+        const data = await login.json().catch(() => ({}));
+        messageEl.textContent = data.detail || "Incorrect PIN";
+        pinInput.value = "";
+        return;
+    }
+
+    window.location.href = "/console";
+}
 
 function updateClock() {
     const now = new Date();

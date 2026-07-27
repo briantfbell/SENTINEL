@@ -6,19 +6,22 @@ assets, and the import contract only governs Python imports between
 layers (AGENTS.md section 6).
 
 Two screens: the kiosk lock screen ("/"), meant to be the only thing a
-visitor at the front door sees, and the console ("/console") behind an
-unobtrusive tab, which is read-only and needs no session of its own —
-same public status/events endpoints slice 5 already exposes.
+visitor at the front door sees, and the console ("/console"), reached
+from a PIN-gated popup inside the lock screen's site-data panel. The
+console page itself checks for a valid session (the same one arm/disarm
+uses) and redirects back to the lock screen without one, so visiting
+the URL directly doesn't bypass the gate — the partials it polls stay
+public/read-only, same as the rest of the status/events API.
 """
 
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 import sentinel
-from sentinel.api.dependencies import get_container
+from sentinel.api.dependencies import SESSION_COOKIE_NAME, get_container
 from sentinel.services import Container
 
 _TEMPLATES_DIR = Path(sentinel.__file__).resolve().parent / "dashboard" / "templates"
@@ -60,10 +63,13 @@ def lock_status_partial(
     )
 
 
-@router.get("/console", response_class=HTMLResponse)
+@router.get("/console", response_model=None)
 def console(
     request: Request, container: Container = Depends(get_container)
-) -> HTMLResponse:
+) -> HTMLResponse | RedirectResponse:
+    token = request.cookies.get(SESSION_COOKIE_NAME)
+    if token is None or not container.auth_service.validate_session(token):
+        return RedirectResponse(url="/", status_code=303)
     return templates.TemplateResponse(request, "console.html", _context(container))
 
 

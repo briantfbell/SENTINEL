@@ -152,6 +152,8 @@ def test_lock_screen_shows_disarmed_by_default(settings: Settings) -> None:
     assert response.status_code == 200
     assert "DISARMED" in response.text
     assert "does not disarm the system" in response.text.lower()
+    assert 'id="console-gate"' in response.text
+    assert "Access console" in response.text
 
 
 def test_lock_status_partial_reflects_armed_state(settings: Settings) -> None:
@@ -167,8 +169,20 @@ def test_lock_status_partial_reflects_armed_state(settings: Settings) -> None:
     assert "REC" in response.text
 
 
-def test_console_page_loads_and_links_back_to_lock_screen(settings: Settings) -> None:
+def test_console_page_requires_a_session(settings: Settings) -> None:
     client = _client(settings)
+
+    response = client.get("/console", follow_redirects=False)
+
+    assert response.status_code == 303
+    assert response.headers["location"] == "/"
+
+
+def test_console_page_loads_after_login_and_links_back_to_lock_screen(
+    settings: Settings,
+) -> None:
+    client = _client(settings)
+    client.post("/api/auth/login", json={"pin": TEST_PIN})
 
     response = client.get("/console")
 
