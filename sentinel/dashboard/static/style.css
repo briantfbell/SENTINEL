@@ -197,23 +197,106 @@ a:focus-visible {
 
 .lock-screen {
     min-height: 100vh;
+    display: flex;
+    flex-direction: column;
     background:
-        radial-gradient(ellipse at 72% -10%, rgba(53, 214, 230, 0.07), transparent 55%),
+        repeating-linear-gradient(
+            to bottom, rgba(255, 255, 255, 0.018) 0, rgba(255, 255, 255, 0.018) 1px,
+            transparent 1px, transparent 3px
+        ),
+        radial-gradient(ellipse at 22% -10%, rgba(53, 214, 230, 0.07), transparent 55%),
         var(--void);
 }
 
+.top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 16px clamp(20px, 4vw, 40px);
+    border-bottom: 1px solid var(--steel);
+    background: rgba(19, 21, 25, 0.6);
+}
+
+.clock-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1.35;
+}
+
+.clock-time {
+    font-family: var(--mono);
+    font-weight: 600;
+    font-size: 1rem;
+    letter-spacing: 0.08em;
+    color: var(--paper);
+    font-variant-numeric: tabular-nums;
+}
+
+.clock-date {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+}
+
+.console-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6em;
+    padding: 8px 16px;
+    background: var(--panel-raised);
+    border: 1px solid var(--steel-bright);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    text-decoration: none;
+    text-transform: uppercase;
+}
+
+.console-link:hover {
+    color: var(--cyan);
+    border-color: var(--cyan-dim);
+}
+
 .lock-grid {
-    min-height: 100vh;
+    flex: 1;
     display: grid;
-    grid-template-columns: minmax(280px, 32%) 1px minmax(360px, 1fr);
+    grid-template-columns: minmax(360px, 1fr) 1px minmax(300px, 34%);
+}
+
+.panel-eyebrow {
+    margin: 0 0 20px;
+    font-family: var(--mono);
+    font-weight: 600;
+    font-size: 0.7rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--cyan);
+}
+
+.panel-eyebrow::before {
+    content: "// ";
+    color: var(--steel-bright);
 }
 
 .ops-panel {
     display: flex;
     flex-direction: column;
-    gap: clamp(28px, 6vh, 56px);
-    padding: clamp(32px, 6vh, 56px) clamp(28px, 4vw, 48px);
     justify-content: center;
+    padding: clamp(28px, 5vh, 40px) clamp(24px, 3vw, 36px);
+    margin: clamp(20px, 4vh, 32px) clamp(20px, 3vw, 32px) clamp(20px, 4vh, 32px) 0;
+    background: var(--panel);
+    border: 1px solid var(--steel);
+}
+
+.field-stack {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(24px, 5vh, 40px);
 }
 
 .divider {
@@ -226,7 +309,11 @@ a:focus-visible {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: clamp(32px, 5vh, 48px) 24px 24px;
+    padding: clamp(28px, 5vh, 44px) 24px 24px;
+}
+
+.access-panel .panel-eyebrow {
+    align-self: center;
 }
 
 .field-block {
@@ -264,10 +351,10 @@ a:focus-visible {
 }
 
 .unit-row {
-    display: flex;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
     align-items: center;
-    justify-content: space-between;
-    gap: 16px;
+    gap: 14px;
     padding-bottom: 14px;
     border-bottom: 1px solid var(--steel);
 }
@@ -275,6 +362,14 @@ a:focus-visible {
 .unit-row:last-child {
     border-bottom: none;
     padding-bottom: 0;
+}
+
+.unit-code {
+    font-family: var(--mono);
+    font-weight: 600;
+    font-size: 0.7rem;
+    letter-spacing: 0.05em;
+    color: var(--cyan);
 }
 
 .unit-name {
@@ -312,33 +407,8 @@ a:focus-visible {
     }
 
     .ops-panel {
-        border-bottom: 1px solid var(--steel);
+        margin: 0 20px 20px;
     }
-}
-
-.console-tab {
-    position: fixed;
-    top: 22px;
-    right: 22px;
-    z-index: 10;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.6em;
-    padding: 10px 18px 10px 16px;
-    background: var(--panel-raised);
-    border: 1px solid var(--steel-bright);
-    color: var(--muted);
-    font-family: var(--mono);
-    font-size: 0.75rem;
-    font-weight: 500;
-    letter-spacing: 0.15em;
-    text-decoration: none;
-    text-transform: uppercase;
-}
-
-.console-tab:hover {
-    color: var(--cyan);
-    border-color: var(--cyan-dim);
 }
 
 .status-cluster {

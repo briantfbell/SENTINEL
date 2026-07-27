@@ -2,41 +2,23 @@
 {% block content %}
 <div class="corner-frame"><i></i></div>
 
-<a class="console-tab" href="/console">
-    <span>Console</span>
-    <span aria-hidden="true">&rarr;</span>
-</a>
-
 <main class="lock-screen">
+    <header class="top-bar">
+        <span class="wordmark">SENTINEL<span>.</span></span>
+        <div class="clock-block">
+            <span id="clock-time" class="clock-time">00:00:00</span>
+            <span id="clock-date" class="clock-date">&mdash;</span>
+        </div>
+        <a class="console-link" href="/console">
+            <span>Console</span>
+            <span aria-hidden="true">&rarr;</span>
+        </a>
+    </header>
+
     <div class="lock-grid">
-        <section class="ops-panel">
-            <span class="wordmark">SENTINEL<span>.</span></span>
-
-            {% if property_address %}
-            <div class="field-block">
-                <p class="field-label">Property</p>
-                <p class="property-address">{{ property_address }}</p>
-            </div>
-            {% endif %}
-
-            {% if response_units %}
-            <div class="field-block">
-                <p class="field-label">Linked response units</p>
-                <ul class="unit-list">
-                    {% for unit in response_units %}
-                    <li class="unit-row">
-                        <span class="unit-name">{{ unit }}</span>
-                        <span class="unit-status"><span class="unit-dot"></span>Established</span>
-                    </li>
-                    {% endfor %}
-                </ul>
-            </div>
-            {% endif %}
-        </section>
-
-        <div class="divider" aria-hidden="true"></div>
-
         <section class="access-panel">
+            <p class="panel-eyebrow">Access control</p>
+
             {% include "partials/lock_status.html" %}
 
             <div class="keypad-card angular">
@@ -64,6 +46,35 @@
             <div class="disclaimer">
                 <p>Video and audio recording begins automatically while armed</p>
                 <p class="tamper-notice">Disconnecting this terminal does not disarm the system</p>
+            </div>
+        </section>
+
+        <div class="divider" aria-hidden="true"></div>
+
+        <section class="ops-panel angular">
+            <p class="panel-eyebrow">Site data</p>
+            <div class="field-stack">
+                {% if property_address %}
+                <div class="field-block">
+                    <p class="field-label">Property</p>
+                    <p class="property-address">{{ property_address }}</p>
+                </div>
+                {% endif %}
+
+                {% if response_units %}
+                <div class="field-block">
+                    <p class="field-label">Linked response units</p>
+                    <ul class="unit-list">
+                        {% for unit in response_units %}
+                        <li class="unit-row">
+                            <span class="unit-code">{{ "%02d"|format(loop.index) }}</span>
+                            <span class="unit-name">{{ unit }}</span>
+                            <span class="unit-status"><span class="unit-dot"></span>Established</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
             </div>
         </section>
     </div>
@@ -147,7 +158,17 @@ document.body.addEventListener("htmx:afterSwap", (event) => {
     }
 });
 
+function updateClock() {
+    const now = new Date();
+    document.getElementById("clock-time").textContent =
+        now.toLocaleTimeString("en-US", { hour12: false });
+    document.getElementById("clock-date").textContent =
+        now.toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" }).toUpperCase();
+}
+
 renderPin();
 updateActionButton();
+updateClock();
+setInterval(updateClock, 1000);
 </script>
 {% endblock %}

@@ -7,8 +7,17 @@ from sentinel import __version__
 from sentinel.cli import main
 
 
-def test_main_prints_version_banner(capsys: pytest.CaptureFixture[str]) -> None:
+def test_main_prints_version_banner(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # Must not depend on whatever config/sentinel.toml happens to exist in
+    # the real working directory — a developer's local config (gitignored,
+    # so invisible to CI) would otherwise make this test actually try to
+    # bind a real server.
+    monkeypatch.setattr(cli, "DEFAULT_CONFIG_PATH", tmp_path / "sentinel.toml")
+
     main()
+
     captured = capsys.readouterr()
     assert __version__ in captured.out
     assert "Sentinel" in captured.out
