@@ -24,18 +24,30 @@ def test_main_runs_with_no_config_present(
     assert "No config at" in capsys.readouterr().out
 
 
-def test_main_confirms_valid_config(
+def test_main_serves_the_app_on_valid_config(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     config_path = tmp_path / "sentinel.toml"
     config_path.write_text(
-        '[auth]\npin_hash = "x"\n\n[storage]\nrecordings_path = "data"\n'
+        f'[auth]\npin_hash = "x"\n\n'
+        f'[storage]\nrecordings_path = "{tmp_path / "recordings"}"\n\n'
+        f'[database]\npath = "{tmp_path / "sentinel.db"}"\n'
     )
     monkeypatch.setattr(cli, "DEFAULT_CONFIG_PATH", config_path)
+    serve_calls: list[tuple[object, str, int]] = []
+    monkeypatch.setattr(
+        cli.uvicorn,
+        "run",
+        lambda app, host, port: serve_calls.append((app, host, port)),
+    )
 
     main()
 
-    assert "Configuration loaded" in capsys.readouterr().out
+    output = capsys.readouterr().out
+    assert "Configuration loaded" in output
+    assert "Serving on http://127.0.0.1:8000" in output
+    assert len(serve_calls) == 1
+    assert serve_calls[0][1:] == ("127.0.0.1", 8000)
 
 
 def test_main_exits_on_invalid_config(

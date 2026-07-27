@@ -32,3 +32,14 @@ class EventRecord(Base):
     # Named metadata_json in Python: `metadata` is reserved on Base for the
     # table's own MetaData. Still stored as the "metadata" column in SQLite.
     metadata_json: Mapped[dict[str, object]] = mapped_column("metadata", JSON)
+
+
+class SessionRecord(Base):
+    """Maps to the `sessions` table (AGENTS.md section 8.2)."""
+
+    __tablename__ = "sessions"
+
+    token_hash: Mapped[str] = mapped_column(primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    client_ip: Mapped[str]

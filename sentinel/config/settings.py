@@ -116,6 +116,7 @@ class DashboardSettings(BaseModel):
     """Server-rendered dashboard behavior."""
 
     snapshot_poll_interval_ms: int = Field(default=1000, gt=0)
+    status_poll_interval_ms: int = Field(default=2000, gt=0)
 
 
 class LoggingSettings(BaseModel):

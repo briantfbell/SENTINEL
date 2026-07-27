@@ -4,6 +4,7 @@ from pathlib import Path
 from sqlalchemy import text
 
 from sentinel.database import EventRepository, apply_migrations, open_engine
+from sentinel.database.migrations import MIGRATIONS
 from sentinel.models import Event, EventType, Severity, SystemState
 
 NOW = datetime(2026, 7, 27, 12, 0, 0, tzinfo=UTC)
@@ -43,7 +44,7 @@ def test_migrations_are_idempotent(tmp_path: Path) -> None:
 
     with engine.connect() as conn:
         count = conn.execute(text("SELECT COUNT(*) FROM schema_version")).scalar()
-    assert count == 1
+    assert count == len(MIGRATIONS)
 
 
 def test_wal_mode_is_enabled(tmp_path: Path) -> None:

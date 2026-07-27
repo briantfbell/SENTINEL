@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+<header class="topbar">
+    <h1>SENTINEL</h1>
+    {% include "partials/status.html" %}
+</header>
+
+<section class="controls">
+    <input id="pin-input" type="password" inputmode="numeric" maxlength="8"
+           placeholder="PIN" autocomplete="off">
+    <div class="pin-actions">
+        <button type="button" class="btn-arm" onclick="sentinelAction('arm')">Arm</button>
+        <button type="button" class="btn-disarm" onclick="sentinelAction('disarm')">Disarm</button>
+    </div>
+    <p id="pin-message" role="status"></p>
+</section>
+
+{% include "partials/events.html" %}
+
+<script>
+async function sentinelAction(action) {
+    const pinInput = document.getElementById("pin-input");
+    const messageEl = document.getElementById("pin-message");
+    messageEl.textContent = "";
+
+    const login = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pin: pinInput.value }),
+    });
+    if (!login.ok) {
+        const data = await login.json().catch(() => ({}));
+        messageEl.textContent = data.detail || "Incorrect PIN";
+        return;
+    }
+
+    const result = await fetch(`/api/system/${action}`, { method: "POST" });
+    if (!result.ok) {
+        const data = await result.json().catch(() => ({}));
+        messageEl.textContent = data.detail || "Action failed";
+        return;
+    }
+
+    pinInput.value = "";
+    htmx.trigger("#status", "load");
+}
+</script>
+{% endblock %}

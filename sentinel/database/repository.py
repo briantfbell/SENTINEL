@@ -2,12 +2,13 @@
 between the domain `Event` model and the `EventRecord` ORM row.
 """
 
-from datetime import UTC, datetime
+from datetime import datetime
 
 from sqlalchemy import Engine, select
 from sqlalchemy.orm import Session
 
 from sentinel.database.orm import EventRecord
+from sentinel.database.timezones import ensure_utc
 from sentinel.models import Event, EventType, Severity, SystemState
 
 
@@ -60,16 +61,20 @@ class EventRepository:
             records = session.execute(statement).scalars().all()
             return [_to_domain(record) for record in records]
 
+    def recent(self, limit: int) -> list[Event]:
+        """Return the most recent events, newest first, for dashboard display."""
+        statement = (
+            select(EventRecord).order_by(EventRecord.timestamp.desc()).limit(limit)
+        )
+        with Session(self._engine) as session:
+            records = session.execute(statement).scalars().all()
+            return [_to_domain(record) for record in records]
+
 
 def _to_domain(record: EventRecord) -> Event:
-    # SQLite has no timezone type; everything stored is UTC by convention
-    # (AGENTS.md section 12), so reattach tzinfo dropped on the round trip.
-    timestamp = record.timestamp
-    if timestamp.tzinfo is None:
-        timestamp = timestamp.replace(tzinfo=UTC)
     return Event(
         type=EventType(record.type),
-        timestamp=timestamp,
+        timestamp=ensure_utc(record.timestamp),
         source=record.source,
         severity=Severity(record.severity),
         state_at_time=SystemState(record.state_at_time),

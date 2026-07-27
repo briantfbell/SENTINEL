@@ -4,13 +4,18 @@ version = "0.1.0"
 description = "Local-first home monitoring and deterrence platform"
 requires-python = ">=3.12"
 dependencies = [
+    "argon2-cffi>=25.1.0",
+    "fastapi>=0.140.2",
+    "jinja2>=3.1.6",
     "pydantic>=2.13.4",
     "pydantic-settings>=2.14.2",
     "sqlalchemy>=2.0.51",
+    "uvicorn>=0.51.0",
 ]
 
 [project.scripts]
 sentinel = "sentinel.cli:main"
+sentinel-admin = "sentinel.admin_cli:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -26,6 +31,7 @@ dev = [
     "pytest-cov>=5.0",
     "ruff>=0.6",
     "mypy>=1.11",
+    "httpx>=0.28.1",
 ]
 
 [tool.ruff]
@@ -35,6 +41,11 @@ include = ["sentinel/**/*.py", "tests/**/*.py"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI's dependency-injection pattern requires Depends(...)/Cookie(...) as
+# argument defaults; B008 doesn't know that and flags it as a bug.
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Cookie", "fastapi.Query"]
 
 [tool.mypy]
 strict = true

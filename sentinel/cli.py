@@ -1,27 +1,29 @@
 """Entry point for the `sentinel` command.
 
 This is the process the systemd unit and `docker compose` both launch.
-Full startup wiring (composition root, uvicorn server) is added slice by
-slice; today it proves the package installs, runs without a config file
-present, and never lets a bad config value surface as a stack trace.
 """
 
 import sys
 from pathlib import Path
 
+import uvicorn
+
 from sentinel import __version__
+from sentinel.api import create_app
 from sentinel.config import ConfigError, load_settings
+from sentinel.services import build_container
 
 DEFAULT_CONFIG_PATH = Path("config/sentinel.toml")
 
 
 def main() -> None:
-    """Print the version banner, then validate config if one is present.
+    """Print the version banner, validate config, then serve the dashboard.
 
     A fresh checkout has no `config/sentinel.toml` (it's gitignored), so
     running with none is not an error — that's rule 3 in AGENTS.md, the
-    repository is always runnable. A config file that fails validation
-    exits with a readable message and status 1, never a traceback.
+    repository is always runnable; it just doesn't serve anything yet. A
+    config file that fails validation exits with a readable message and
+    status 1, never a traceback.
     """
     print(f"Sentinel v{__version__} — local-first home monitoring and deterrence")
 
@@ -33,12 +35,17 @@ def main() -> None:
         return
 
     try:
-        load_settings(DEFAULT_CONFIG_PATH)
+        settings = load_settings(DEFAULT_CONFIG_PATH)
     except ConfigError as exc:
         print(f"Configuration error:\n{exc}", file=sys.stderr)
         sys.exit(1)
 
     print(f"Configuration loaded from {DEFAULT_CONFIG_PATH}")
+
+    container = build_container(settings)
+    app = create_app(container)
+    print(f"Serving on http://{settings.system.host}:{settings.system.port}")
+    uvicorn.run(app, host=settings.system.host, port=settings.system.port)
 
 
 if __name__ == "__main__":

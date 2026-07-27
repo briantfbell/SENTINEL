@@ -1,0 +1,22 @@
+import asyncio
+
+from sentinel.config import Settings
+from sentinel.models import EventType, SystemState
+from sentinel.services import build_container
+
+
+def test_build_container_wires_publish_to_state_and_log(settings: Settings) -> None:
+    container = build_container(settings)
+
+    asyncio.run(container.bus.publish(EventType.SYSTEM_ARMED, source="test"))
+
+    assert container.state_machine.state == SystemState.ARMED
+    assert len(container.event_repository.query()) == 1
+
+
+def test_build_container_wires_auth(settings: Settings) -> None:
+    container = build_container(settings)
+
+    token = container.auth_service.login("1234", "127.0.0.1")
+
+    assert container.auth_service.validate_session(token) is True
