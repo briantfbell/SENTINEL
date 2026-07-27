@@ -56,6 +56,11 @@ def _layer_of(module_path: Path) -> str | None:
 
 
 def _sentinel_layers_imported(tree: ast.Module) -> set[str]:
+    """Return the recognized layer names imported from `sentinel.*`.
+
+    Root-level modules (e.g. `sentinel.errors`) are not layers and are
+    deliberately excluded: they sit outside the tree the contract governs.
+    """
     layers: set[str] = set()
     for node in ast.walk(tree):
         if isinstance(node, ast.ImportFrom) and node.module:
@@ -63,13 +68,14 @@ def _sentinel_layers_imported(tree: ast.Module) -> set[str]:
         elif isinstance(node, ast.Import):
             for alias in node.names:
                 parts = alias.name.split(".")
-                if len(parts) >= 2 and parts[0] == "sentinel":
+                is_layer = len(parts) >= 2 and parts[0] == "sentinel"
+                if is_layer and parts[1] in LAYER_ALLOWED:
                     layers.add(parts[1])
             continue
         else:
             continue
         parts = module.split(".")
-        if len(parts) >= 2 and parts[0] == "sentinel":
+        if len(parts) >= 2 and parts[0] == "sentinel" and parts[1] in LAYER_ALLOWED:
             layers.add(parts[1])
     return layers
 

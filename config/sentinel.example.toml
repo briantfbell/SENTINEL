@@ -1,0 +1,98 @@
+# Sentinel configuration.
+#
+# Copy this file to sentinel.toml in the same directory and edit it.
+# sentinel.toml is gitignored — it holds a PIN hash and is deployment
+# specific, it must never be committed.
+#
+# Every key here is validated at startup (sentinel.config.Settings). A bad
+# value exits with a readable error instead of a stack trace. Any key can
+# be overridden by an environment variable prefixed SENTINEL__ with double
+# underscores between nesting levels, e.g. SENTINEL__AUTH__MAX_ATTEMPTS=3.
+
+[system]
+# Interface the web server binds to. Must be a real LAN address, never
+# 0.0.0.0 — the PIN keypad is a UI affordance, not a security boundary
+# (AGENTS.md section 4.6), so the process itself must not be reachable
+# beyond the LAN interface it's given.
+host = "127.0.0.1"
+# TCP port for the dashboard and API.
+port = 8000
+# IANA timezone used to localize timestamps for display. All timestamps
+# are stored internally as timezone-aware UTC.
+timezone = "UTC"
+
+[auth]
+# Argon2 hash of the arm/disarm PIN. Generate with `uv run sentinel-admin
+# set-pin` — it prompts for the PIN and never accepts it as an argument,
+# so it never appears in shell history. Never a plaintext PIN.
+pin_hash = "REPLACE_WITH_ARGON2_HASH"
+# How long a session cookie stays valid after a correct PIN, in seconds.
+session_ttl_seconds = 900
+# Failed PIN attempts allowed, counted server-side and keyed by client IP,
+# before lockout engages.
+max_attempts = 5
+# How long a lockout lasts, in seconds, once max_attempts is reached.
+lockout_seconds = 300
+
+[camera]
+# "mock" replays a directory of still images and requires no hardware.
+# "rtsp" is the real IP camera, added in build slice 9.
+provider = "mock"
+# Full-resolution RTSP URL, recordings are pulled from this stream.
+# Required when provider = "rtsp".
+main_stream_url = ""
+# Low-resolution RTSP substream URL, used for motion gating and detection.
+# Required when provider = "rtsp".
+substream_url = ""
+
+[detection]
+# "mock" returns scripted detections and requires no model file.
+# "onnx" runs the real YOLOv8n model via onnxruntime, added in slice 10.
+provider = "mock"
+# Path to the ONNX model file. Not committed to git; see AGENTS.md 4.3.
+model_path = "models/yolov8n.onnx"
+# Minimum box confidence to count as a hit.
+confidence_threshold = 0.55
+# Consecutive qualifying frames required before a PersonDetected event fires.
+consecutive_frames = 3
+# Continuous no-hit duration, in seconds, before a PersonGone event fires.
+absence_seconds = 8.0
+# Reject detection boxes smaller than this fraction of the frame area.
+min_box_area_ratio = 0.01
+# Hard cap on inference rate regardless of motion, in frames per second.
+max_inference_fps = 3.0
+
+[audio]
+# "mock" logs announcements instead of playing audio.
+# "device" plays through the real USB DAC and speaker, added in slice 6.
+provider = "mock"
+# Output device identifier, backend-specific, decided in slice 6.
+device = "default"
+# Playback volume for the first (WARNING state) announcement, 0.0 to 1.0.
+warning_volume = 0.5
+# Playback volume for the second (ESCALATED state) announcement, 0.0 to 1.0.
+escalated_volume = 1.0
+
+[storage]
+# Where recordings and snapshots are written. Must be an explicit path on
+# the NVMe drive, never the boot partition's default location
+# (AGENTS.md section 4.8). No default is provided on purpose.
+recordings_path = "data/recordings"
+# Recordings older than this are pruned by the retention job.
+retention_days = 14
+# Retention also enforces this size cap, deleting oldest recordings first.
+max_gb = 50.0
+
+[database]
+# Path to the SQLite database file. Runs in WAL mode.
+path = "data/sentinel.db"
+
+[dashboard]
+# How often the dashboard polls the live snapshot endpoint, in milliseconds.
+snapshot_poll_interval_ms = 1000
+
+[logging]
+# One of DEBUG, INFO, WARNING, ERROR, CRITICAL.
+level = "INFO"
+# Structured JSON log lines instead of plain text. Set true in production.
+json_format = false
