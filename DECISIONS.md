@@ -1,0 +1,200 @@
+# Decision Log
+
+Append-only. One entry per significant choice. Newest at the bottom.
+
+Format: date, decision, alternatives considered, rationale, and what would
+cause a reversal.
+
+This file exists for the engineer who inherits this repository with no
+access to the conversations that produced it. Write for that person.
+
+---
+
+## 0001 - Jinja2 plus HTMX instead of React
+
+**Date:** project inception
+**Decision:** Server-rendered Jinja2 templates with HTMX for partial updates.
+No JavaScript build step, no bundler, HTMX vendored locally.
+
+**Alternatives:** React SPA, Vue, plain server-rendered HTML with full page
+reloads.
+
+**Rationale:** The display is an Amazon Fire tablet running Silk, an aging
+Chromium fork on weak hardware, unattended for months at a time. Server
+rendering keeps one source of truth and eliminates client-side state that
+can desynchronize during a long uptime. A build step would add a toolchain
+to maintain on a Pi for no MVP benefit.
+
+**Would reverse if:** the dashboard grows genuinely interactive surfaces
+such as a drag-and-drop rule editor, or multiple simultaneous clients need
+real-time bidirectional updates.
+
+---
+
+## 0002 - Snapshot polling for live preview
+
+**Date:** project inception
+**Decision:** The dashboard polls a JPEG snapshot endpoint on an interval.
+The implementation sits behind a `StreamProvider` protocol.
+
+**Alternatives:** MJPEG proxy, HLS, WebRTC via go2rtc.
+
+**Rationale:** RTSP does not play natively in a browser, so something has to
+transcode or proxy. MJPEG is CPU-expensive on a Pi and on the tablet. HLS
+adds several seconds of latency, which is wrong for a live deterrence loop.
+WebRTC is the correct long-term answer but adds a second service to run and
+debug. Snapshot polling is the option that cannot break, and the interface
+makes it swappable.
+
+**Would reverse if:** the latency proves unacceptable in practice, at which
+point go2rtc plus a WebRTC `StreamProvider` is the intended path.
+
+---
+
+## 0003 - ONNX Runtime instead of the ultralytics package
+
+**Date:** project inception
+**Decision:** YOLOv8n exported to ONNX, executed via `onnxruntime`. The
+`ultralytics` package is not a runtime dependency.
+
+**Alternatives:** ultralytics runtime, OpenCV DNN with MobileNet-SSD,
+TensorFlow Lite, Google Coral.
+
+**Rationale:** `ultralytics` is AGPL-licensed, which would impose copyleft
+obligations if this repository is ever published. ONNX Runtime is
+permissively licensed, has no opinion about the model, and keeps the door
+open to swapping architectures. Coral remains available later behind the
+same `Detector` protocol.
+
+**Would reverse if:** the project stays permanently private and inference
+performance on ONNX Runtime proves inadequate.
+
+---
+
+## 0004 - Motion gating before inference
+
+**Date:** project inception
+**Decision:** Frame differencing rejects still frames before any inference
+runs. Inference is additionally rate-limited to a configured maximum FPS.
+
+**Alternatives:** run the detector on every frame, run on a fixed interval
+regardless of motion.
+
+**Rationale:** A Pi 5 running a detector on every frame saturates a core and
+builds a frame backlog. The overwhelming majority of frames from a fixed
+camera contain no change at all, and rejecting them costs almost nothing.
+
+**Would reverse if:** the hardware gains a dedicated accelerator making
+per-frame inference cheap, or motion gating proves to miss slow approaches.
+
+---
+
+## 0005 - Detection hysteresis lives in the detection layer
+
+**Date:** project inception
+**Decision:** A `DetectionDebouncer` converts raw per-frame model output
+into domain events using a consecutive-frame threshold, a confidence floor,
+a minimum box size, and an absence timeout.
+
+**Alternatives:** emit an event per positive frame and let the state machine
+absorb the noise.
+
+**Rationale:** Raw model output flaps frame to frame. Without hysteresis the
+state machine thrashes between states every few seconds and the event log
+becomes unusable as evidence. Placing this in the detection layer keeps the
+state machine pure and the debouncer independently testable with no model.
+
+**Would reverse if:** a detector emerges with output stable enough that the
+debouncer becomes a no-op.
+
+---
+
+## 0006 - State machine and rule engine have separate authority
+
+**Date:** project inception
+**Decision:** The state machine is the only component permitted to change
+system state and performs no I/O. The rule engine reads state and produces
+declarative actions, never mutating state and never calling providers
+directly.
+
+**Alternatives:** a single component handling both, rules that mutate state.
+
+**Rationale:** Two components able to change state means two sources of
+truth and a class of bug that is extremely difficult to trace. The split
+also makes both halves testable without mocks.
+
+**Would reverse if:** never. This is foundational.
+
+---
+
+## 0007 - Server-side authentication with hashed PIN
+
+**Date:** project inception
+**Decision:** Argon2-hashed PIN in config, server-side verification,
+opaque session tokens with TTL, server-side IP-keyed lockout, LAN-bound
+listener.
+
+**Alternatives:** client-side PIN check, no auth on the assumption the LAN
+is trusted.
+
+**Rationale:** The keypad is a UI affordance. Anyone on the Wi-Fi can reach
+the API directly and disarm the system with a single request. This is cheap
+to build correctly at the start and expensive to retrofit.
+
+**Would reverse if:** never for the MVP shape. Would extend if user accounts
+are ever added.
+
+---
+
+## 0008 - Docker for development, systemd for production
+
+**Date:** project inception
+**Decision:** Compose runs the app with mock providers only, no device
+passthrough. Production runs on the Pi host under systemd via `uv sync`.
+
+**Alternatives:** full containerization with ALSA and camera device
+passthrough, no containers at all.
+
+**Rationale:** Audio and camera passthrough into a container on a Pi is a
+known time sink with little payoff for a single-host deployment. Keeping the
+container path hardware-free means it runs on any laptop and in CI, which is
+where its value actually is.
+
+**Would reverse if:** the deployment target becomes multi-host or the
+project needs reproducible hardware-attached builds.
+
+---
+
+## 0009 - NVMe over SD card, RTC battery required
+
+**Date:** project inception
+**Decision:** Boot and record to an NVMe drive on the M.2 HAT+. Populate the
+Pi 5 RTC battery connector.
+
+**Alternatives:** SD card boot with recordings to USB storage, accept clock
+drift.
+
+**Rationale:** Continuous clip recording will exhaust an SD card's write
+endurance. Separately, an offline system has no NTP, and a Pi without an RTC
+battery comes back from a power loss with a meaningless clock, which
+destroys the evidentiary value of the entire event log.
+
+**Would reverse if:** the deployment gains reliable network time and
+recording moves off the boot device.
+
+---
+
+## 0010 - Retention policy in the MVP
+
+**Date:** project inception
+**Decision:** Age-based and size-based pruning of recordings ships in the
+MVP rather than being deferred.
+
+**Alternatives:** defer retention until storage becomes a problem.
+
+**Rationale:** A full disk takes down the database, the recorder, and the
+dashboard simultaneously, and it does so silently at 3am several months
+after deployment. This is a small amount of code that prevents a total
+outage.
+
+**Would reverse if:** never.

@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+.venv/
+venv/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# uv
+uv.lock.tmp
+
+# Sentinel runtime data — never commit secrets, recordings, or weights
+config/sentinel.toml
+models/
+data/
+*.db
+*.db-wal
+*.db-shm
+recordings/
+snapshots/
+logs/
+*.log
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
