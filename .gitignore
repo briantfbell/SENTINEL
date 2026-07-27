@@ -16,14 +16,14 @@ uv.lock.tmp
 
 # Sentinel runtime data — never commit secrets, recordings, or weights
 config/sentinel.toml
-models/
-data/
+/models/
+/data/
 *.db
 *.db-wal
 *.db-shm
-recordings/
-snapshots/
-logs/
+/recordings/
+/snapshots/
+/logs/
 *.log
 
 # OS / editor
