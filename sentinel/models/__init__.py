@@ -22,6 +22,7 @@ from sentinel.models.enums import (
     TimerName,
 )
 from sentinel.models.events import Event
+from sentinel.models.recording import Recording
 
 __all__ = [
     "Action",
@@ -32,6 +33,7 @@ __all__ = [
     "FinalizeClip",
     "LogEvent",
     "PlayAnnouncement",
+    "Recording",
     "RefreshDashboard",
     "RefreshPresence",
     "Severity",

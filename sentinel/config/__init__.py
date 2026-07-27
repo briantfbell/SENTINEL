@@ -3,9 +3,17 @@
 from sentinel.config.errors import ConfigError
 from sentinel.config.settings import (
     AudioSettings,
+    DetectionSettings,
     Settings,
     StateSettings,
     load_settings,
 )
 
-__all__ = ["AudioSettings", "ConfigError", "Settings", "StateSettings", "load_settings"]
+__all__ = [
+    "AudioSettings",
+    "ConfigError",
+    "DetectionSettings",
+    "Settings",
+    "StateSettings",
+    "load_settings",
+]

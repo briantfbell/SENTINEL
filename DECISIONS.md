@@ -295,3 +295,40 @@ smaller and can't be forgotten by a future rule added to the table.
 **Would reverse if:** a future slice needs multiple concurrent, independent
 timers that must survive a state change (nothing in the current ladder
 does).
+
+---
+
+## 0014 - Recordings capture two bookend snapshots, not continuous video
+
+**Date:** 2026-07-27
+**Decision:** `Recorder.start()` writes one JPEG (`start.jpg`) to a new clip
+directory; `Recorder.stop()` writes a second (`end.jpg`), then persists a
+`recordings` row with the real elapsed time and on-disk size. `FinalizeClip`
+(the transition table's other recording action) is a deliberate no-op in
+the dispatcher — `stop()` already finalizes the row, in every path that
+calls it, including the disarm wildcard, which the table doesn't pair with
+`FinalizeClip` at all.
+
+**Alternatives:** buffer continuous frames at some capture rate and encode
+them into an actual video file on stop; defer "records" entirely to slice 9
+when a real camera exists.
+
+**Rationale:** `MockCamera` only ever produces still JPEGs — there is no
+frame stream to buffer, and no video-encoding tool has been chosen (AGENTS
+section 5 doesn't list one; `ffmpeg` isn't on the approved dependency list).
+Simulating continuous capture by writing dozens of near-identical still
+frames per "recording" would be dishonest work product for a system whose
+event log doubles as evidence (section 1). Two real, honestly-labeled
+snapshots — what the camera actually saw at the start and end of the
+event — is smaller and doesn't pretend to be something it isn't. Making
+`stop()` always finalize (rather than requiring the separate `FinalizeClip`
+action from every caller) closes the same class of gap as decision 0013:
+the transition table pairs `FinalizeClip` with `StopRecording` only on the
+`COOLDOWN, CooldownExpired -> ARMED` row, not on the `SystemDisarmed`
+wildcard — a recording stopped by disarming mid-alert would otherwise
+never get a `recordings` row at all.
+
+**Would reverse if:** slice 9's real camera and a chosen video-encoding
+path make continuous capture straightforward — at which point `Recorder`
+gets replaced, not extended, since bookend snapshots stop being the right
+abstraction entirely.

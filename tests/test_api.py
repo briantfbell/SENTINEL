@@ -122,6 +122,26 @@ def test_console_shows_live_preview_after_login(settings: Settings) -> None:
     assert 'src="/api/camera/snapshot"' in response.text
 
 
+def test_recordings_endpoint_returns_empty_list_by_default(settings: Settings) -> None:
+    client = _client(settings)
+
+    response = client.get("/api/recordings/")
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_console_shows_recordings_panel_after_login(settings: Settings) -> None:
+    client = _client(settings)
+    client.post("/api/auth/login", json={"pin": TEST_PIN})
+
+    response = client.get("/console")
+
+    assert response.status_code == 200
+    assert "Recordings" in response.text
+    assert "No recordings yet" in response.text
+
+
 def test_recent_events_render_after_arming(settings: Settings) -> None:
     client = _client(settings)
     client.post("/api/auth/login", json={"pin": TEST_PIN})

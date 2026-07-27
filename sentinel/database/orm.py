@@ -43,3 +43,17 @@ class SessionRecord(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     client_ip: Mapped[str]
+
+
+class RecordingRecord(Base):
+    """Maps to the `recordings` table (AGENTS.md section 8.2)."""
+
+    __tablename__ = "recordings"
+    __table_args__ = (Index("ix_recordings_started_at", "started_at"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    ended_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    path: Mapped[str]
+    trigger_event_id: Mapped[int | None]
+    size_bytes: Mapped[int]

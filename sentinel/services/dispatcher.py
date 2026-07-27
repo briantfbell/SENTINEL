@@ -1,9 +1,8 @@
-"""Wires the state machine, rule engine, event log, timers, and audio
-together. Not the full composition root (that's `container.py`) — this
-is the orchestration layer: publishing a notification must drive a
-transition (when the event is state-machine-relevant), persist it,
-compute the action list, and execute the actions that don't yet need a
-camera or detector.
+"""Wires the state machine, rule engine, event log, timers, audio,
+recorder, and detection loop together. Not the full composition root
+(that's `container.py`) — this is the orchestration layer: publishing a
+notification must drive a transition (when the event is state-machine-
+relevant), persist it, compute the action list, and execute it.
 """
 
 import asyncio
@@ -21,12 +20,18 @@ from sentinel.models import (
     CancelTimers,
     Event,
     EventType,
+    FinalizeClip,
     PlayAnnouncement,
+    StartRecording,
     StartTimer,
     StopAudio,
+    StopRecording,
+    SystemState,
     TimerName,
 )
 from sentinel.rules import RuleEngine
+from sentinel.services.detection_loop import DetectionLoop
+from sentinel.services.recorder import Recorder
 from sentinel.state import TRANSITIONS, StateMachine, TransitionResult
 
 _TIMER_EVENT: dict[TimerName, EventType] = {
@@ -71,6 +76,8 @@ class EventDispatcher:
         bus: EventBus,
         audio_player: AudioPlayer,
         audio_settings: AudioSettings,
+        recorder: Recorder,
+        detection_loop: DetectionLoop,
         run_blocking: BlockingRunner = asyncio.to_thread,
     ) -> None:
         self._state_machine = state_machine
@@ -79,6 +86,8 @@ class EventDispatcher:
         self._timer_service = timer_service
         self._bus = bus
         self._audio_player = audio_player
+        self._recorder = recorder
+        self._detection_loop = detection_loop
         self._run_blocking = run_blocking
         self._timer_seconds: dict[TimerName, float] = {
             TimerName.GRACE: state_settings.grace_seconds,
@@ -107,7 +116,7 @@ class EventDispatcher:
 
         actions = self._rule_engine.actions_for(notification.type, state_at_time)
 
-        self._event_repository.add(
+        event_id = self._event_repository.add(
             Event(
                 type=notification.type,
                 timestamp=notification.timestamp,
@@ -125,12 +134,24 @@ class EventDispatcher:
             # that doesn't accept it and raise IllegalTransitionError.
             # DECISIONS.md 0013.
             self._timer_service.cancel_all()
+            self._sync_detection_loop(transition)
 
-        self._execute_actions(actions, source=notification.source)
+        self._execute_actions(actions, source=notification.source, event_id=event_id)
 
         return DispatchResult(transition=transition, actions=actions)
 
-    def _execute_actions(self, actions: list[Action], *, source: str) -> None:
+    def _sync_detection_loop(self, transition: TransitionResult) -> None:
+        """DISARMED means "monitoring off" (AGENTS.md section 7.1) — the
+        detection loop only runs while armed, in any of its substates.
+        """
+        if transition.to_state == SystemState.DISARMED:
+            self._detection_loop.stop()
+        elif transition.from_state == SystemState.DISARMED:
+            self._detection_loop.start()
+
+    def _execute_actions(
+        self, actions: list[Action], *, source: str, event_id: int
+    ) -> None:
         for action in actions:
             if isinstance(action, StartTimer):
                 self._timer_service.start(
@@ -145,6 +166,13 @@ class EventDispatcher:
                 self._play_announcement(action.level, source=source)
             elif isinstance(action, StopAudio):
                 self._audio_player.stop()
+            elif isinstance(action, StartRecording):
+                self._recorder.start(trigger_event_id=event_id)
+            elif isinstance(action, StopRecording):
+                self._recorder.stop()
+            elif isinstance(action, FinalizeClip):
+                pass  # Recorder.stop() already finalizes the row (see recorder.py);
+                # kept as its own action for fidelity to the section 7.2 table.
 
     def _play_announcement(self, level: AnnouncementLevel, *, source: str) -> None:
         clip_path, volume = self._announcements[level]

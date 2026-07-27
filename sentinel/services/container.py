@@ -9,14 +9,23 @@ from sentinel.camera import CameraError, CameraProvider, MockCamera
 from sentinel.config import Settings
 from sentinel.database import (
     EventRepository,
+    RecordingRepository,
     SessionRepository,
     apply_migrations,
     open_engine,
 )
+from sentinel.detection import (
+    DetectionDebouncer,
+    DetectionError,
+    Detector,
+    MockDetector,
+)
 from sentinel.events import EventBus, Notification, TimerService
 from sentinel.rules import RuleEngine
 from sentinel.services.auth import AuthService
+from sentinel.services.detection_loop import DetectionLoop
 from sentinel.services.dispatcher import EventDispatcher
+from sentinel.services.recorder import Recorder
 from sentinel.state import StateMachine
 
 
@@ -26,6 +35,7 @@ class Container:
 
     settings: Settings
     event_repository: EventRepository
+    recording_repository: RecordingRepository
     session_repository: SessionRepository
     bus: EventBus
     state_machine: StateMachine
@@ -33,6 +43,9 @@ class Container:
     timer_service: TimerService
     audio_player: AudioPlayer
     camera_provider: CameraProvider
+    detector: Detector
+    detection_loop: DetectionLoop
+    recorder: Recorder
     dispatcher: EventDispatcher
     auth_service: AuthService
 
@@ -48,6 +61,7 @@ def build_container(settings: Settings) -> Container:
     apply_migrations(engine)
 
     event_repository = EventRepository(engine)
+    recording_repository = RecordingRepository(engine)
     session_repository = SessionRepository(engine)
 
     bus = EventBus()
@@ -72,6 +86,30 @@ def build_container(settings: Settings) -> Container:
             "set camera.provider = 'mock'"
         )
 
+    detector: Detector
+    if settings.detection.provider == "mock":
+        detector = MockDetector()
+    else:
+        raise DetectionError(
+            "detection.provider 'onnx' is not implemented until slice 10; "
+            "set detection.provider = 'mock'"
+        )
+
+    debouncer = DetectionDebouncer(settings.detection)
+    detection_loop = DetectionLoop(
+        camera_provider=camera_provider,
+        detector=detector,
+        debouncer=debouncer,
+        bus=bus,
+        interval_seconds=1.0 / settings.detection.max_inference_fps,
+    )
+
+    recorder = Recorder(
+        camera_provider=camera_provider,
+        recording_repository=recording_repository,
+        recordings_path=settings.storage.recordings_path,
+    )
+
     dispatcher = EventDispatcher(
         state_machine=state_machine,
         rule_engine=rule_engine,
@@ -81,6 +119,8 @@ def build_container(settings: Settings) -> Container:
         bus=bus,
         audio_player=audio_player,
         audio_settings=settings.audio,
+        recorder=recorder,
+        detection_loop=detection_loop,
     )
 
     async def _on_notification(notification: Notification) -> None:
@@ -101,6 +141,7 @@ def build_container(settings: Settings) -> Container:
     return Container(
         settings=settings,
         event_repository=event_repository,
+        recording_repository=recording_repository,
         session_repository=session_repository,
         bus=bus,
         state_machine=state_machine,
@@ -108,6 +149,9 @@ def build_container(settings: Settings) -> Container:
         timer_service=timer_service,
         audio_player=audio_player,
         camera_provider=camera_provider,
+        detector=detector,
+        detection_loop=detection_loop,
+        recorder=recorder,
         dispatcher=dispatcher,
         auth_service=auth_service,
     )

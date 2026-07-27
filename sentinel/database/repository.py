@@ -18,8 +18,12 @@ class EventRepository:
     def __init__(self, engine: Engine) -> None:
         self._engine = engine
 
-    def add(self, event: Event) -> None:
-        """Append an event to the log. Events are immutable once written."""
+    def add(self, event: Event) -> int:
+        """Append an event to the log. Events are immutable once written.
+
+        Returns the assigned row id, so callers (the dispatcher) can
+        record which event triggered a recording.
+        """
         record = EventRecord(
             timestamp=event.timestamp,
             type=event.type.value,
@@ -31,6 +35,7 @@ class EventRepository:
         with Session(self._engine) as session:
             session.add(record)
             session.commit()
+            return record.id
 
     def query(
         self,

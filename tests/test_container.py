@@ -27,3 +27,29 @@ def test_build_container_wires_mock_camera_by_default(settings: Settings) -> Non
     container = build_container(settings)
 
     assert container.camera_provider.get_snapshot().startswith(b"\xff\xd8")
+
+
+def test_build_container_wires_mock_detector_by_default(settings: Settings) -> None:
+    container = build_container(settings)
+
+    assert container.detector.detect(b"frame") == []
+
+
+def test_build_container_wires_detection_loop_to_arm_disarm(settings: Settings) -> None:
+    container = build_container(settings)
+
+    asyncio.run(container.bus.publish(EventType.SYSTEM_ARMED, source="test"))
+    assert container.detection_loop._task is not None
+
+    asyncio.run(container.bus.publish(EventType.SYSTEM_DISARMED, source="test"))
+    assert container.detection_loop._task is None
+
+
+def test_build_container_wires_recorder(settings: Settings) -> None:
+    container = build_container(settings)
+
+    container.recorder.start(trigger_event_id=None)
+    recording_id = container.recorder.stop()
+
+    assert recording_id is not None
+    assert len(container.recording_repository.recent(10)) == 1

@@ -100,6 +100,15 @@ def events_partial(
     )
 
 
+@router.get("/partials/recordings", response_class=HTMLResponse)
+def recordings_partial(
+    request: Request, container: Container = Depends(get_container)
+) -> HTMLResponse:
+    return templates.TemplateResponse(
+        request, "partials/recordings.html", _context(container)
+    )
+
+
 def _lock_context(container: Container) -> dict[str, object]:
     state = container.state_machine.state.value
     armed = state != "disarmed"
@@ -125,6 +134,7 @@ def _context(container: Container) -> dict[str, object]:
         "state": state,
         "state_detail": _STATE_DETAIL.get(state, ""),
         "events": container.event_repository.recent(20),
+        "recordings": container.recording_repository.recent(10),
         "status_poll_interval_ms": dashboard_settings.status_poll_interval_ms,
         "snapshot_poll_interval_ms": dashboard_settings.snapshot_poll_interval_ms,
     }

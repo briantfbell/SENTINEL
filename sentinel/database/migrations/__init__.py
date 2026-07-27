@@ -11,6 +11,7 @@ from sqlalchemy import Connection, Engine, text
 
 from sentinel.database.migrations.m0001_initial import upgrade as _m0001_upgrade
 from sentinel.database.migrations.m0002_sessions import upgrade as _m0002_upgrade
+from sentinel.database.migrations.m0003_recordings import upgrade as _m0003_upgrade
 
 
 class Migration(NamedTuple):
@@ -22,6 +23,7 @@ class Migration(NamedTuple):
 MIGRATIONS: list[Migration] = [
     Migration(1, "schema_version and events tables", _m0001_upgrade),
     Migration(2, "sessions table", _m0002_upgrade),
+    Migration(3, "recordings table", _m0003_upgrade),
 ]
 
 

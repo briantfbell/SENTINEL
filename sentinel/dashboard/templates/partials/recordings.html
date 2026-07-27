@@ -1,0 +1,23 @@
+<div id="recordings"
+     hx-get="/partials/recordings" hx-trigger="load, every {{ status_poll_interval_ms | default(2000) }}ms"
+     hx-swap="outerHTML">
+    <div class="table-scroll">
+        <table class="events-table">
+            <thead>
+                <tr><th>Started</th><th>Ended</th><th>Size</th><th>Path</th></tr>
+            </thead>
+            <tbody>
+            {% for recording in recordings %}
+                <tr>
+                    <td>{{ recording.started_at.strftime("%Y-%m-%d %H:%M:%S") }}</td>
+                    <td>{{ recording.ended_at.strftime("%Y-%m-%d %H:%M:%S") }}</td>
+                    <td>{{ (recording.size_bytes / 1024) | round(1) }} KB</td>
+                    <td>{{ recording.path }}</td>
+                </tr>
+            {% else %}
+                <tr><td colspan="4">No recordings yet.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
