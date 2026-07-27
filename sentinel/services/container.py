@@ -4,6 +4,7 @@ injects them (AGENTS.md section 6). Wiring happens here and nowhere else.
 
 from dataclasses import dataclass
 
+from sentinel.audio import AplayAudioPlayer, AudioPlayer, MockAudioPlayer
 from sentinel.config import Settings
 from sentinel.database import (
     EventRepository,
@@ -29,6 +30,7 @@ class Container:
     state_machine: StateMachine
     rule_engine: RuleEngine
     timer_service: TimerService
+    audio_player: AudioPlayer
     dispatcher: EventDispatcher
     auth_service: AuthService
 
@@ -51,12 +53,23 @@ def build_container(settings: Settings) -> Container:
     rule_engine = RuleEngine()
     timer_service = TimerService(bus)
 
+    audio_player: AudioPlayer
+    if settings.audio.provider == "mock":
+        audio_player = MockAudioPlayer()
+    else:
+        audio_player = AplayAudioPlayer(
+            device=settings.audio.device, mixer_control=settings.audio.mixer_control
+        )
+
     dispatcher = EventDispatcher(
         state_machine=state_machine,
         rule_engine=rule_engine,
         event_repository=event_repository,
         timer_service=timer_service,
         state_settings=settings.state,
+        bus=bus,
+        audio_player=audio_player,
+        audio_settings=settings.audio,
     )
 
     async def _on_notification(notification: Notification) -> None:
@@ -82,6 +95,7 @@ def build_container(settings: Settings) -> Container:
         state_machine=state_machine,
         rule_engine=rule_engine,
         timer_service=timer_service,
+        audio_player=audio_player,
         dispatcher=dispatcher,
         auth_service=auth_service,
     )

@@ -64,14 +64,21 @@ max_inference_fps = 3.0
 
 [audio]
 # "mock" logs announcements instead of playing audio.
-# "device" plays through the real USB DAC and speaker, added in slice 6.
+# "device" plays through the real USB DAC and speaker via aplay/amixer
+# (DECISIONS.md 0012).
 provider = "mock"
-# Output device identifier, backend-specific, decided in slice 6.
+# ALSA PCM device passed to aplay's -D flag, e.g. "default" or "plughw:1,0".
 device = "default"
+# ALSA mixer control amixer sets before playback, e.g. "Master" or "PCM".
+mixer_control = "Master"
 # Playback volume for the first (WARNING state) announcement, 0.0 to 1.0.
 warning_volume = 0.5
 # Playback volume for the second (ESCALATED state) announcement, 0.0 to 1.0.
 escalated_volume = 1.0
+# WAV clip played for the first announcement. Not committed to git.
+warning_clip_path = "sounds/warning.wav"
+# WAV clip played for the second (louder) announcement. Not committed to git.
+escalated_clip_path = "sounds/escalated.wav"
 
 [state]
 # How long presence must persist before the first announcement (ALERT ->

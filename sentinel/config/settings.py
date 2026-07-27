@@ -77,12 +77,15 @@ class DetectionSettings(BaseModel):
 
 
 class AudioSettings(BaseModel):
-    """Announcement playback. Backend (sounddevice vs aplay) is a slice 6 decision."""
+    """Announcement playback via aplay/amixer (DECISIONS.md 0012)."""
 
     provider: Literal["mock", "device"] = "mock"
     device: str = "default"
+    mixer_control: str = "Master"
     warning_volume: float = Field(default=0.5, ge=0.0, le=1.0)
     escalated_volume: float = Field(default=1.0, ge=0.0, le=1.0)
+    warning_clip_path: Path = Path("sounds/warning.wav")
+    escalated_clip_path: Path = Path("sounds/escalated.wav")
 
 
 class StateSettings(BaseModel):

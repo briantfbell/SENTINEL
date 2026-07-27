@@ -54,3 +54,9 @@ files = ["sentinel"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "strict"
+filterwarnings = [
+    # An orphaned background asyncio task swallowing an exception (e.g. a
+    # timer firing into an illegal state) must fail the suite, not print a
+    # line nobody reads. See DECISIONS.md 0013.
+    "error::pytest.PytestUnraisableExceptionWarning",
+]

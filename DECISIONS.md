@@ -228,3 +228,70 @@ config.
 **Would reverse if:** the escalation ladder gains enough independent
 per-transition timers that a flat three-key section stops being legible,
 at which point a structured `[state.timers]` table might replace it.
+
+---
+
+## 0012 - Audio: subprocess to `aplay`/`amixer`, not `sounddevice`
+
+**Date:** 2026-07-27
+**Decision:** `AplayAudioPlayer` shells out to `aplay` to play a WAV clip and
+`amixer` to set volume beforehand, both via stdlib `subprocess`. No new
+runtime dependency.
+
+**Alternatives:** `sounddevice` (PortAudio bindings), which section 5 also
+named as an option pending this decision.
+
+**Rationale:** `sounddevice` needs `libportaudio2` installed on the host
+and typically numpy for buffer handling, for a use case that's just "play
+a pre-rendered WAV file at a given volume" — no synthesis, no streaming,
+no low-latency requirement. `aplay` and `amixer` ship in `alsa-utils`,
+which is present on Raspberry Pi OS by default and trivial to add anywhere
+else. Zero new Python dependencies, and the real player is exercised only
+by hand on real hardware anyway (rule 2: no hardware in the test suite),
+so there's no test-authoring cost either way — the deciding factor was
+footprint on the Pi image and the dev/CI Docker image, not testability.
+
+**Also closes a config gap surfaced building this:** section 8.1 never
+gave announcement clips a config home. Added `audio.warning_clip_path`,
+`audio.escalated_clip_path` (defaulting to `sounds/warning.wav` and
+`sounds/escalated.wav`, gitignored like `models/` and `data/`), and
+`audio.mixer_control` (default `"Master"`, the ALSA mixer control
+`amixer` targets) — same reasoning as decision 0011: config, not magic
+numbers.
+
+**Would reverse if:** a future slice needs real-time audio synthesis,
+ducking, or multi-channel mixing that pre-rendered clips can't express.
+
+---
+
+## 0013 - Leaving a state early cancels its pending escalation timer
+
+**Date:** 2026-07-27
+**Decision:** The services-layer dispatcher calls `TimerService.cancel_all()`
+whenever a notification causes an actual state change (`from_state !=
+to_state`), before executing that transition's own actions. Self-loops
+(e.g. `ALERT + PersonDetected -> ALERT`, "refresh presence, no re-entry
+actions") do not cancel anything, since nothing left.
+
+**Alternatives:** add an explicit `CancelTimers` action to every individual
+transition-table row that can leave a state before its timer expires
+(`ALERT + PersonGone`, `WARNING + PersonGone`, `COOLDOWN + PersonDetected`);
+leave it as-is and accept the occasional orphaned-timer exception.
+
+**Rationale:** Found by exercising slice 6's audio flow end-to-end for the
+first time: `WARNING + PersonGone -> COOLDOWN` stops audio and starts a
+cooldown timer, but the *warning* timer started on the way into WARNING
+was still running. It fired `WarningExpired` into `COOLDOWN` a moment
+later — not in the transition table, so `IllegalTransitionError`, in a
+background task the test suite hadn't previously exercised. The same class
+of bug exists for `ALERT + PersonGone` (orphaned grace timer) and
+`COOLDOWN + PersonDetected` (orphaned cooldown timer). Patching each row
+individually is exactly the "special case buried in the handler" section
+7.2 warns against for the wildcard rows; the real invariant is that at
+most one escalation timer is ever meaningful at a time, scoped to the
+state that started it, so enforcing it centrally in the dispatcher is
+smaller and can't be forgotten by a future rule added to the table.
+
+**Would reverse if:** a future slice needs multiple concurrent, independent
+timers that must survive a state change (nothing in the current ladder
+does).
