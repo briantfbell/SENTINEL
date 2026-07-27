@@ -198,3 +198,33 @@ after deployment. This is a small amount of code that prevents a total
 outage.
 
 **Would reverse if:** never.
+
+---
+
+## 0011 - Added a `[state]` config section for escalation timer durations
+
+**Date:** 2026-07-27
+**Decision:** Added `grace_seconds` (default 10), `warning_seconds` (default
+30), and `cooldown_seconds` (default 60) under a new `[state]` section,
+consumed by the services-layer dispatcher when it executes `StartTimer`
+actions.
+
+**Alternatives:** hardcode the durations, fold them into `[detection]`
+(where `absence_seconds` already lives), leave them undocumented until a
+later slice forced the question.
+
+**Rationale:** Building slice 4 (event bus and rule engine) surfaced a real
+gap: the transition table's `GraceExpired`, `WarningExpired`, and
+`CooldownExpired` timers are load-bearing but AGENTS.md section 8.1 never
+gives them a config home, and section 8.1's hard rule is "no magic numbers
+anywhere." `[detection]`'s `absence_seconds` is a different concept — how
+long the *detector* waits before declaring absence, not how long the
+*state machine* waits before escalating — so folding the two together
+would conflate detection-layer and state-layer timing. A new section
+matching the `sentinel/state` package name was the smallest change that
+kept the values named, typed, and validated like everything else in
+config.
+
+**Would reverse if:** the escalation ladder gains enough independent
+per-transition timers that a flat three-key section stops being legible,
+at which point a structured `[state.timers]` table might replace it.

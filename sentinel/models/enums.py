@@ -46,3 +46,18 @@ class EventType(StrEnum):
     LOCKOUT_STARTED = "lockout_started"
     DISK_SPACE_LOW = "disk_space_low"
     DETECTOR_LAGGING = "detector_lagging"
+
+
+class TimerName(StrEnum):
+    """The three named timers in the escalation ladder (section 7.1)."""
+
+    GRACE = "grace"
+    WARNING = "warning"
+    COOLDOWN = "cooldown"
+
+
+class AnnouncementLevel(StrEnum):
+    """Which announcement/volume a PlayAnnouncement action fires (section 7.2)."""
+
+    WARNING = "warning"
+    ESCALATED = "escalated"

@@ -85,6 +85,19 @@ class AudioSettings(BaseModel):
     escalated_volume: float = Field(default=1.0, ge=0.0, le=1.0)
 
 
+class StateSettings(BaseModel):
+    """Escalation ladder timer durations. Not specified in AGENTS.md section
+    8.1's required-sections list; added in slice 4 to close a real gap — the
+    transition table's GraceExpired/WarningExpired/CooldownExpired timers
+    need a duration from somewhere, and "no magic numbers" (section 8.1)
+    rules out hardcoding it. See DECISIONS.md 0011.
+    """
+
+    grace_seconds: float = Field(default=10.0, gt=0)
+    warning_seconds: float = Field(default=30.0, gt=0)
+    cooldown_seconds: float = Field(default=60.0, gt=0)
+
+
 class StorageSettings(BaseModel):
     """Recording/snapshot retention. No default path: must be explicit (section 4.8)."""
 
@@ -126,6 +139,7 @@ class Settings(BaseSettings):
     camera: CameraSettings = CameraSettings()
     detection: DetectionSettings = DetectionSettings()
     audio: AudioSettings = AudioSettings()
+    state: StateSettings = StateSettings()
     storage: StorageSettings
     database: DatabaseSettings = DatabaseSettings()
     dashboard: DashboardSettings = DashboardSettings()
