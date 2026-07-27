@@ -5,7 +5,7 @@ import pytest
 from sentinel.config import Settings
 from sentinel.services import hash_pin
 
-TEST_PIN = "1234"
+TEST_PIN = "2001"
 
 
 @pytest.fixture

@@ -103,6 +103,8 @@ def _lock_context(container: Container) -> dict[str, object]:
         "primary_label": "ARMED" if armed else "DISARMED",
         "substate_label": _SUBSTATE_LABEL.get(state),
         "status_poll_interval_ms": container.settings.dashboard.status_poll_interval_ms,
+        "property_address": container.settings.dashboard.property_address,
+        "response_units": container.settings.dashboard.response_units,
     }
 
 

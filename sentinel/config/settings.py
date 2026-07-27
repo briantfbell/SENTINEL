@@ -116,10 +116,19 @@ class DatabaseSettings(BaseModel):
 
 
 class DashboardSettings(BaseModel):
-    """Server-rendered dashboard behavior."""
+    """Server-rendered dashboard behavior.
+
+    property_address and response_units are lock-screen display copy,
+    not operational thresholds — but they're still deployment-specific
+    (a home address), so they default empty rather than shipping a
+    placeholder in the example config that someone might forget to
+    change. The lock screen hides those blocks entirely when empty.
+    """
 
     snapshot_poll_interval_ms: int = Field(default=1000, gt=0)
     status_poll_interval_ms: int = Field(default=2000, gt=0)
+    property_address: str = ""
+    response_units: list[str] = Field(default_factory=list)
 
 
 class LoggingSettings(BaseModel):

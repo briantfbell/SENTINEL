@@ -108,6 +108,15 @@ path = "data/sentinel.db"
 snapshot_poll_interval_ms = 1000
 # How often the dashboard polls system status and the recent-events list.
 status_poll_interval_ms = 2000
+# Shown on the lock screen. Left empty here on purpose — this is a home
+# address, deployment-specific like the PIN hash, so it belongs only in
+# your local gitignored sentinel.toml, never in the example.
+property_address = ""
+# Names shown under "Linked response units" on the lock screen, each
+# marked established. Cosmetic — Sentinel has no real connection to any
+# outside agency (see AGENTS.md section 3: no remote access). Empty
+# list hides the block entirely.
+response_units = []
 
 [logging]
 # One of DEBUG, INFO, WARNING, ERROR, CRITICAL.

@@ -3,6 +3,7 @@ import asyncio
 from sentinel.config import Settings
 from sentinel.models import EventType, SystemState
 from sentinel.services import build_container
+from tests.conftest import TEST_PIN
 
 
 def test_build_container_wires_publish_to_state_and_log(settings: Settings) -> None:
@@ -17,6 +18,6 @@ def test_build_container_wires_publish_to_state_and_log(settings: Settings) -> N
 def test_build_container_wires_auth(settings: Settings) -> None:
     container = build_container(settings)
 
-    token = container.auth_service.login("1234", "127.0.0.1")
+    token = container.auth_service.login(TEST_PIN, "127.0.0.1")
 
     assert container.auth_service.validate_session(token) is True

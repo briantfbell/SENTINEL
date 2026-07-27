@@ -8,37 +8,64 @@
 </a>
 
 <main class="lock-screen">
-    <div class="lock-header">
-        <span class="wordmark">SENTINEL<span>.</span></span>
-    </div>
+    <div class="lock-grid">
+        <section class="ops-panel">
+            <span class="wordmark">SENTINEL<span>.</span></span>
 
-    {% include "partials/lock_status.html" %}
+            {% if property_address %}
+            <div class="field-block">
+                <p class="field-label">Property</p>
+                <p class="property-address">{{ property_address }}</p>
+            </div>
+            {% endif %}
 
-    <div class="keypad-card angular">
-        <div class="pin-display" id="pin-display" aria-hidden="true"></div>
-        <div class="keypad-grid">
-            <button type="button" onclick="sentinelKey('1')">1</button>
-            <button type="button" onclick="sentinelKey('2')">2</button>
-            <button type="button" onclick="sentinelKey('3')">3</button>
-            <button type="button" onclick="sentinelKey('4')">4</button>
-            <button type="button" onclick="sentinelKey('5')">5</button>
-            <button type="button" onclick="sentinelKey('6')">6</button>
-            <button type="button" onclick="sentinelKey('7')">7</button>
-            <button type="button" onclick="sentinelKey('8')">8</button>
-            <button type="button" onclick="sentinelKey('9')">9</button>
-            <button type="button" class="key-clear" onclick="sentinelClear()">Clear</button>
-            <button type="button" onclick="sentinelKey('0')">0</button>
-            <button type="button" class="key-confirm" onclick="sentinelSubmit()">Enter</button>
-        </div>
-        <button type="button" id="action-button" class="action-button to-arm" onclick="sentinelSubmit()">
-            Arm system
-        </button>
-        <p class="pin-message" id="pin-message" role="status"></p>
-    </div>
+            {% if response_units %}
+            <div class="field-block">
+                <p class="field-label">Linked response units</p>
+                <ul class="unit-list">
+                    {% for unit in response_units %}
+                    <li class="unit-row">
+                        <span class="unit-name">{{ unit }}</span>
+                        <span class="unit-status"><span class="unit-dot"></span>Established</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </section>
 
-    <div class="disclaimer">
-        <p>Video and audio recording begins automatically while armed</p>
-        <p class="tamper-notice">Disconnecting this terminal does not disarm the system</p>
+        <div class="divider" aria-hidden="true"></div>
+
+        <section class="access-panel">
+            {% include "partials/lock_status.html" %}
+
+            <div class="keypad-card angular">
+                <div class="pin-display" id="pin-display" aria-hidden="true"></div>
+                <div class="keypad-grid">
+                    <button type="button" onclick="sentinelKey('1')">1</button>
+                    <button type="button" onclick="sentinelKey('2')">2</button>
+                    <button type="button" onclick="sentinelKey('3')">3</button>
+                    <button type="button" onclick="sentinelKey('4')">4</button>
+                    <button type="button" onclick="sentinelKey('5')">5</button>
+                    <button type="button" onclick="sentinelKey('6')">6</button>
+                    <button type="button" onclick="sentinelKey('7')">7</button>
+                    <button type="button" onclick="sentinelKey('8')">8</button>
+                    <button type="button" onclick="sentinelKey('9')">9</button>
+                    <button type="button" class="key-clear" onclick="sentinelClear()">Clear</button>
+                    <button type="button" onclick="sentinelKey('0')">0</button>
+                    <button type="button" class="key-confirm" onclick="sentinelSubmit()">Enter</button>
+                </div>
+                <button type="button" id="action-button" class="action-button to-arm" onclick="sentinelSubmit()">
+                    Arm system
+                </button>
+                <p class="pin-message" id="pin-message" role="status"></p>
+            </div>
+
+            <div class="disclaimer">
+                <p>Video and audio recording begins automatically while armed</p>
+                <p class="tamper-notice">Disconnecting this terminal does not disarm the system</p>
+            </div>
+        </section>
     </div>
 </main>
 
