@@ -1,4 +1,4 @@
-<div id="status" class="status-badge status-{{ state }}"
+<div id="status" class="status-chip state-{{ state }}"
      hx-get="/partials/status" hx-trigger="load, every {{ status_poll_interval_ms | default(2000) }}ms"
      hx-swap="outerHTML">
     {{ state | upper }}

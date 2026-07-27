@@ -1,0 +1,14 @@
+<div id="lock-status" class="status-cluster"
+     hx-get="/partials/lock-status" hx-trigger="load, every {{ status_poll_interval_ms | default(2000) }}ms"
+     hx-swap="outerHTML">
+    <div class="rec-indicator{{ ' live' if armed else '' }}">
+        <span class="dot"></span>
+        <span>{{ "REC" if armed else "STANDBY" }}</span>
+    </div>
+    <div class="status-word state-{{ state }}" data-armed="{{ 'true' if armed else 'false' }}">
+        {{ primary_label }}
+    </div>
+    <div class="status-substate{{ ' pulse' if state in ('alert', 'warning', 'escalated') else '' }}">
+        {{ substate_label or "" }}
+    </div>
+</div>

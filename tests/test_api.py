@@ -142,3 +142,45 @@ def test_docs_are_disabled_to_avoid_a_cdn_fetch(settings: Settings) -> None:
 
     assert client.get("/docs").status_code == 404
     assert client.get("/openapi.json").status_code == 404
+
+
+def test_lock_screen_shows_disarmed_by_default(settings: Settings) -> None:
+    client = _client(settings)
+
+    response = client.get("/")
+
+    assert response.status_code == 200
+    assert "DISARMED" in response.text
+    assert "does not disarm the system" in response.text.lower()
+
+
+def test_lock_status_partial_reflects_armed_state(settings: Settings) -> None:
+    client = _client(settings)
+    client.post("/api/auth/login", json={"pin": TEST_PIN})
+    client.post("/api/system/arm")
+
+    response = client.get("/partials/lock-status")
+
+    assert response.status_code == 200
+    assert "ARMED" in response.text
+    assert 'data-armed="true"' in response.text
+    assert "REC" in response.text
+
+
+def test_console_page_loads_and_links_back_to_lock_screen(settings: Settings) -> None:
+    client = _client(settings)
+
+    response = client.get("/console")
+
+    assert response.status_code == 200
+    assert "CONSOLE" in response.text
+    assert 'href="/"' in response.text
+
+
+def test_state_detail_partial_describes_current_state(settings: Settings) -> None:
+    client = _client(settings)
+
+    response = client.get("/partials/state-detail")
+
+    assert response.status_code == 200
+    assert "Monitoring is off" in response.text

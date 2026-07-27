@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<main class="console">
+    <header class="console-header">
+        <span class="wordmark">SENTINEL<span>.</span> CONSOLE</span>
+        {% include "partials/status.html" %}
+        <a class="lock-link" href="/">&larr; Lock screen</a>
+    </header>
+
+    <section class="panel">
+        <h2>System detail</h2>
+        {% include "partials/state_detail.html" %}
+    </section>
+
+    <section class="panel">
+        <h2>Recent events</h2>
+        {% include "partials/events.html" %}
+    </section>
+</main>
+{% endblock %}

@@ -1,0 +1,5 @@
+<p id="state-detail" class="detail"
+   hx-get="/partials/state-detail" hx-trigger="load, every {{ status_poll_interval_ms | default(2000) }}ms"
+   hx-swap="outerHTML">
+    {{ state_detail }}
+</p>

@@ -1,22 +1,24 @@
 <div id="events"
      hx-get="/partials/events" hx-trigger="load, every {{ status_poll_interval_ms | default(2000) }}ms"
      hx-swap="outerHTML">
-    <table class="events-table">
-        <thead>
-            <tr><th>Time</th><th>Type</th><th>Source</th><th>Severity</th><th>State</th></tr>
-        </thead>
-        <tbody>
-        {% for event in events %}
-            <tr class="severity-{{ event.severity.value }}">
-                <td>{{ event.timestamp.strftime("%Y-%m-%d %H:%M:%S") }}</td>
-                <td>{{ event.type.value }}</td>
-                <td>{{ event.source }}</td>
-                <td>{{ event.severity.value }}</td>
-                <td>{{ event.state_at_time.value }}</td>
-            </tr>
-        {% else %}
-            <tr><td colspan="5">No events yet.</td></tr>
-        {% endfor %}
-        </tbody>
-    </table>
+    <div class="table-scroll">
+        <table class="events-table">
+            <thead>
+                <tr><th>Time</th><th>Type</th><th>Source</th><th>Severity</th><th>State</th></tr>
+            </thead>
+            <tbody>
+            {% for event in events %}
+                <tr class="severity-{{ event.severity.value }}">
+                    <td>{{ event.timestamp.strftime("%Y-%m-%d %H:%M:%S") }}</td>
+                    <td>{{ event.type.value }}</td>
+                    <td>{{ event.source }}</td>
+                    <td>{{ event.severity.value }}</td>
+                    <td>{{ event.state_at_time.value }}</td>
+                </tr>
+            {% else %}
+                <tr><td colspan="5">No events yet.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>

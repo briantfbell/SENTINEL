@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="corner-frame"><i></i></div>
+
+<a class="console-tab" href="/console">
+    <span>Console</span>
+    <span aria-hidden="true">&rarr;</span>
+</a>
+
+<main class="lock-screen">
+    <div class="lock-header">
+        <span class="wordmark">SENTINEL<span>.</span></span>
+    </div>
+
+    {% include "partials/lock_status.html" %}
+
+    <div class="keypad-card angular">
+        <div class="pin-display" id="pin-display" aria-hidden="true"></div>
+        <div class="keypad-grid">
+            <button type="button" onclick="sentinelKey('1')">1</button>
+            <button type="button" onclick="sentinelKey('2')">2</button>
+            <button type="button" onclick="sentinelKey('3')">3</button>
+            <button type="button" onclick="sentinelKey('4')">4</button>
+            <button type="button" onclick="sentinelKey('5')">5</button>
+            <button type="button" onclick="sentinelKey('6')">6</button>
+            <button type="button" onclick="sentinelKey('7')">7</button>
+            <button type="button" onclick="sentinelKey('8')">8</button>
+            <button type="button" onclick="sentinelKey('9')">9</button>
+            <button type="button" class="key-clear" onclick="sentinelClear()">Clear</button>
+            <button type="button" onclick="sentinelKey('0')">0</button>
+            <button type="button" class="key-confirm" onclick="sentinelSubmit()">Enter</button>
+        </div>
+        <button type="button" id="action-button" class="action-button to-arm" onclick="sentinelSubmit()">
+            Arm system
+        </button>
+        <p class="pin-message" id="pin-message" role="status"></p>
+    </div>
+
+    <div class="disclaimer">
+        <p>Video and audio recording begins automatically while armed</p>
+        <p class="tamper-notice">Disconnecting this terminal does not disarm the system</p>
+    </div>
+</main>
+
+<script>
+let pin = "";
+let currentlyArmed = document.querySelector(".status-word")?.dataset.armed === "true";
+
+function renderPin() {
+    const display = document.getElementById("pin-display");
+    display.innerHTML = "";
+    const shown = Math.max(pin.length, 4);
+    for (let i = 0; i < shown; i++) {
+        const peg = document.createElement("span");
+        peg.className = "peg" + (i < pin.length ? " filled" : "");
+        display.appendChild(peg);
+    }
+}
+
+function sentinelKey(digit) {
+    if (pin.length >= 8) return;
+    pin += digit;
+    renderPin();
+}
+
+function sentinelClear() {
+    pin = "";
+    renderPin();
+    document.getElementById("pin-message").textContent = "";
+}
+
+function updateActionButton() {
+    const button = document.getElementById("action-button");
+    if (currentlyArmed) {
+        button.textContent = "Disarm system";
+        button.className = "action-button to-disarm";
+    } else {
+        button.textContent = "Arm system";
+        button.className = "action-button to-arm";
+    }
+}
+
+async function sentinelSubmit() {
+    const messageEl = document.getElementById("pin-message");
+    if (!pin) {
+        messageEl.textContent = "Enter your PIN first";
+        return;
+    }
+    messageEl.textContent = "";
+
+    const login = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pin }),
+    });
+    if (!login.ok) {
+        const data = await login.json().catch(() => ({}));
+        messageEl.textContent = data.detail || "Incorrect PIN";
+        sentinelClear();
+        return;
+    }
+
+    const action = currentlyArmed ? "disarm" : "arm";
+    const result = await fetch(`/api/system/${action}`, { method: "POST" });
+    if (!result.ok) {
+        const data = await result.json().catch(() => ({}));
+        messageEl.textContent = data.detail || "Action failed";
+        sentinelClear();
+        return;
+    }
+
+    sentinelClear();
+    htmx.trigger("#lock-status", "load");
+}
+
+document.body.addEventListener("htmx:afterSwap", (event) => {
+    if (event.target.id === "lock-status" || event.target.id === "status-cluster") {
+        currentlyArmed = document.querySelector(".status-word")?.dataset.armed === "true";
+        updateActionButton();
+    }
+});
+
+renderPin();
+updateActionButton();
+</script>
+{% endblock %}

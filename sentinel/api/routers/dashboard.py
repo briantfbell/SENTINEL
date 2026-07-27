@@ -4,6 +4,11 @@ package, not by importing `sentinel.dashboard` — that package has no
 Python behavior for the API to depend on, only templates and static
 assets, and the import contract only governs Python imports between
 layers (AGENTS.md section 6).
+
+Two screens: the kiosk lock screen ("/"), meant to be the only thing a
+visitor at the front door sees, and the console ("/console") behind an
+unobtrusive tab, which is read-only and needs no session of its own —
+same public status/events endpoints slice 5 already exposes.
 """
 
 from pathlib import Path
@@ -21,12 +26,45 @@ templates = Jinja2Templates(directory=str(_TEMPLATES_DIR))
 
 router = APIRouter(tags=["dashboard"])
 
+_SUBSTATE_LABEL: dict[str, str] = {
+    "armed": "Monitoring",
+    "alert": "Alert — presence detected",
+    "warning": "Warning — announcement active",
+    "escalated": "Escalated — full volume alert",
+    "cooldown": "Cooldown — re-arming",
+}
+
+_STATE_DETAIL: dict[str, str] = {
+    "disarmed": "Monitoring is off. No events are being processed.",
+    "armed": "Monitoring active. No presence detected.",
+    "alert": "Presence detected. Grace period running before the first announcement.",
+    "warning": "First announcement has played. Presence still detected.",
+    "escalated": "Second announcement playing at full volume.",
+    "cooldown": "Presence cleared. Settling before the system re-arms.",
+}
+
 
 @router.get("/", response_class=HTMLResponse)
-def index(
+def lock_screen(
     request: Request, container: Container = Depends(get_container)
 ) -> HTMLResponse:
-    return templates.TemplateResponse(request, "index.html", _context(container))
+    return templates.TemplateResponse(request, "lock.html", _lock_context(container))
+
+
+@router.get("/partials/lock-status", response_class=HTMLResponse)
+def lock_status_partial(
+    request: Request, container: Container = Depends(get_container)
+) -> HTMLResponse:
+    return templates.TemplateResponse(
+        request, "partials/lock_status.html", _lock_context(container)
+    )
+
+
+@router.get("/console", response_class=HTMLResponse)
+def console(
+    request: Request, container: Container = Depends(get_container)
+) -> HTMLResponse:
+    return templates.TemplateResponse(request, "console.html", _context(container))
 
 
 @router.get("/partials/status", response_class=HTMLResponse)
@@ -35,6 +73,15 @@ def status_partial(
 ) -> HTMLResponse:
     return templates.TemplateResponse(
         request, "partials/status.html", _context(container)
+    )
+
+
+@router.get("/partials/state-detail", response_class=HTMLResponse)
+def state_detail_partial(
+    request: Request, container: Container = Depends(get_container)
+) -> HTMLResponse:
+    return templates.TemplateResponse(
+        request, "partials/state_detail.html", _context(container)
     )
 
 
@@ -47,13 +94,27 @@ def events_partial(
     )
 
 
-def _context(container: Container) -> dict[str, object]:
-    """Shared template context: partials re-render their own hx-trigger
-    attributes on every outerHTML swap, so they need this every time too,
-    not just on the initial full-page load.
-    """
+def _lock_context(container: Container) -> dict[str, object]:
+    state = container.state_machine.state.value
+    armed = state != "disarmed"
     return {
-        "state": container.state_machine.state.value,
+        "state": state,
+        "armed": armed,
+        "primary_label": "ARMED" if armed else "DISARMED",
+        "substate_label": _SUBSTATE_LABEL.get(state),
+        "status_poll_interval_ms": container.settings.dashboard.status_poll_interval_ms,
+    }
+
+
+def _context(container: Container) -> dict[str, object]:
+    """Shared context for the console and its partials: partials re-render
+    their own hx-trigger attributes on every outerHTML swap, so they need
+    this every time too, not just on the initial full-page load.
+    """
+    state = container.state_machine.state.value
+    return {
+        "state": state,
+        "state_detail": _STATE_DETAIL.get(state, ""),
         "events": container.event_repository.recent(20),
         "status_poll_interval_ms": container.settings.dashboard.status_poll_interval_ms,
     }
