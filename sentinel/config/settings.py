@@ -53,6 +53,9 @@ class CameraSettings(BaseModel):
     provider: Literal["mock", "rtsp"] = "mock"
     main_stream_url: str = ""
     substream_url: str = ""
+    # None means "use the stills bundled with sentinel/camera/stills/".
+    # Point this at a real directory to preview with your own test images.
+    mock_stills_dir: Path | None = None
 
     @model_validator(mode="after")
     def _require_urls_for_rtsp(self) -> "CameraSettings":

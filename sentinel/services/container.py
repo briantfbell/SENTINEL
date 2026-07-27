@@ -5,6 +5,7 @@ injects them (AGENTS.md section 6). Wiring happens here and nowhere else.
 from dataclasses import dataclass
 
 from sentinel.audio import AplayAudioPlayer, AudioPlayer, MockAudioPlayer
+from sentinel.camera import CameraError, CameraProvider, MockCamera
 from sentinel.config import Settings
 from sentinel.database import (
     EventRepository,
@@ -31,6 +32,7 @@ class Container:
     rule_engine: RuleEngine
     timer_service: TimerService
     audio_player: AudioPlayer
+    camera_provider: CameraProvider
     dispatcher: EventDispatcher
     auth_service: AuthService
 
@@ -59,6 +61,15 @@ def build_container(settings: Settings) -> Container:
     else:
         audio_player = AplayAudioPlayer(
             device=settings.audio.device, mixer_control=settings.audio.mixer_control
+        )
+
+    camera_provider: CameraProvider
+    if settings.camera.provider == "mock":
+        camera_provider = MockCamera(stills_dir=settings.camera.mock_stills_dir)
+    else:
+        raise CameraError(
+            "camera.provider 'rtsp' is not implemented until slice 9; "
+            "set camera.provider = 'mock'"
         )
 
     dispatcher = EventDispatcher(
@@ -96,6 +107,7 @@ def build_container(settings: Settings) -> Container:
         rule_engine=rule_engine,
         timer_service=timer_service,
         audio_player=audio_player,
+        camera_provider=camera_provider,
         dispatcher=dispatcher,
         auth_service=auth_service,
     )

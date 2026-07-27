@@ -44,6 +44,9 @@ main_stream_url = ""
 # Low-resolution RTSP substream URL, used for motion gating and detection.
 # Required when provider = "rtsp".
 substream_url = ""
+# Directory of .jpg stills the mock camera cycles through. Leave unset to
+# use the small fixture set bundled with sentinel/camera/stills/.
+# mock_stills_dir = "/path/to/your/test/images"
 
 [detection]
 # "mock" returns scripted detections and requires no model file.

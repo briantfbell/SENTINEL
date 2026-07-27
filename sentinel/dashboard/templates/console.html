@@ -13,8 +13,24 @@
     </section>
 
     <section class="panel">
+        <h2>Live preview</h2>
+        <img id="camera-snapshot" class="camera-snapshot angular"
+             src="/api/camera/snapshot" alt="Live camera snapshot">
+    </section>
+
+    <section class="panel">
         <h2>Recent events</h2>
         {% include "partials/events.html" %}
     </section>
 </main>
+
+<script>
+function refreshSnapshot() {
+    const img = document.getElementById("camera-snapshot");
+    if (img) {
+        img.src = "/api/camera/snapshot?t=" + Date.now();
+    }
+}
+setInterval(refreshSnapshot, {{ snapshot_poll_interval_ms | default(1000) }});
+</script>
 {% endblock %}

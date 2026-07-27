@@ -102,6 +102,26 @@ def test_lockout_after_repeated_failures(settings: Settings) -> None:
     assert response.status_code == 423
 
 
+def test_camera_snapshot_returns_jpeg(settings: Settings) -> None:
+    client = _client(settings)
+
+    response = client.get("/api/camera/snapshot")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "image/jpeg"
+    assert response.content.startswith(b"\xff\xd8")
+
+
+def test_console_shows_live_preview_after_login(settings: Settings) -> None:
+    client = _client(settings)
+    client.post("/api/auth/login", json={"pin": TEST_PIN})
+
+    response = client.get("/console")
+
+    assert response.status_code == 200
+    assert 'src="/api/camera/snapshot"' in response.text
+
+
 def test_recent_events_render_after_arming(settings: Settings) -> None:
     client = _client(settings)
     client.post("/api/auth/login", json={"pin": TEST_PIN})

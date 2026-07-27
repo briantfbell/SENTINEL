@@ -120,9 +120,11 @@ def _context(container: Container) -> dict[str, object]:
     this every time too, not just on the initial full-page load.
     """
     state = container.state_machine.state.value
+    dashboard_settings = container.settings.dashboard
     return {
         "state": state,
         "state_detail": _STATE_DETAIL.get(state, ""),
         "events": container.event_repository.recent(20),
-        "status_poll_interval_ms": container.settings.dashboard.status_poll_interval_ms,
+        "status_poll_interval_ms": dashboard_settings.status_poll_interval_ms,
+        "snapshot_poll_interval_ms": dashboard_settings.snapshot_poll_interval_ms,
     }

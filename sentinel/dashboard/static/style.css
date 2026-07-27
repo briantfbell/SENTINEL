@@ -729,6 +729,14 @@ a:focus-visible {
     font-size: 0.9rem;
 }
 
+.camera-snapshot {
+    display: block;
+    width: 100%;
+    max-width: 640px;
+    border: 1px solid var(--steel-bright);
+    background: var(--void);
+}
+
 .table-scroll {
     overflow-x: auto;
 }

@@ -21,3 +21,9 @@ def test_build_container_wires_auth(settings: Settings) -> None:
     token = container.auth_service.login(TEST_PIN, "127.0.0.1")
 
     assert container.auth_service.validate_session(token) is True
+
+
+def test_build_container_wires_mock_camera_by_default(settings: Settings) -> None:
+    container = build_container(settings)
+
+    assert container.camera_provider.get_snapshot().startswith(b"\xff\xd8")

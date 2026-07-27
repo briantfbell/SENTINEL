@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
 import sentinel
-from sentinel.api.routers import auth, dashboard, events, system
+from sentinel.api.routers import auth, camera, dashboard, events, system
 from sentinel.services import Container
 
 _STATIC_DIR = Path(sentinel.__file__).resolve().parent / "dashboard" / "static"
@@ -27,5 +27,6 @@ def create_app(container: Container) -> FastAPI:
     app.include_router(auth.router)
     app.include_router(system.router)
     app.include_router(events.router)
+    app.include_router(camera.router)
 
     return app
